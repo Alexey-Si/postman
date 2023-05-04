@@ -1,0 +1,295 @@
+{
+	"info": {
+		"_postman_id": "5f79161e-6e0d-4989-9d2d-eac6fc2c6492",
+		"name": "HH",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "24422711"
+	},
+	"item": [
+		{
+			"name": "City ID",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"pm.test(\"Body is correct\", function () {\r",
+							"    pm.response.to.have.body(\"items\", \"id\", \"text\", \"url\");\r",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://api.hh.ru/suggests/areas?text=Москва",
+					"protocol": "https",
+					"host": [
+						"api",
+						"hh",
+						"ru"
+					],
+					"path": [
+						"suggests",
+						"areas"
+					],
+					"query": [
+						{
+							"key": "text",
+							"value": "Москва"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Dictionary",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"pm.test(\"Body matches string\", function () {\r",
+							"    pm.expect(pm.response.text()).to.include(\"employment\", \"experience\");\r",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://api.hh.ru/dictionaries",
+					"protocol": "https",
+					"host": [
+						"api",
+						"hh",
+						"ru"
+					],
+					"path": [
+						"dictionaries"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Search auto with pre-req",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"// Получение значения переменной коллекции \"City\"\r",
+							"var city = pm.variables.get('city');\r",
+							"\r",
+							"// Формирование URL для запроса за городом\r",
+							"var areasUrl = 'https://api.hh.ru/suggests/areas?text=' + city;\r",
+							"\r",
+							"// Отправка запроса за городом\r",
+							"pm.sendRequest({\r",
+							"  url: areasUrl,\r",
+							"  method: 'GET'\r",
+							"}, function (err, areasResponse) {\r",
+							"  if (err) {\r",
+							"    console.log(err);\r",
+							"    return;\r",
+							"  }\r",
+							"\r",
+							"  // Обработка ответа\r",
+							"  var areasJsonResponse = JSON.parse(areasResponse.text());\r",
+							"\r",
+							"  // Извлечение значения id из ответа\r",
+							"  var areaId = null;\r",
+							"\r",
+							"  if (areasJsonResponse.items && areasJsonResponse.items.length > 0) {\r",
+							"    areaId = areasJsonResponse.items[0].id;\r",
+							"  }\r",
+							"\r",
+							"  // Формирование URL для запроса за квериками поиска\r",
+							"  var dictionariesUrl = 'https://api.hh.ru/dictionaries';\r",
+							"\r",
+							"  // Отправка запроса\r",
+							"  pm.sendRequest({\r",
+							"    url: dictionariesUrl,\r",
+							"    method: 'GET'\r",
+							"  }, function (err, dictionariesResponse) {\r",
+							"    if (err) {\r",
+							"      console.log(err);\r",
+							"      return;\r",
+							"    }\r",
+							"\r",
+							"    // Обработка ответа \r",
+							"    var dictionariesJsonResponse = JSON.parse(dictionariesResponse.text());\r",
+							"\r",
+							"    // Извлечение значения id из массива \"experience\"\r",
+							"    var experienceArray = dictionariesJsonResponse.experience;\r",
+							"    var experienceId = null;\r",
+							"\r",
+							"    for (var i = 0; i < experienceArray.length; i++) {\r",
+							"      var experienceObject = experienceArray[i];\r",
+							"      if (experienceObject.name === \"От 3 до 6 лет\") {\r",
+							"        experienceId = experienceObject.id;\r",
+							"        break;\r",
+							"      }\r",
+							"    }\r",
+							"// Извлечение значения id из массива \"employment\"\r",
+							"    var employmentArray = dictionariesJsonResponse.employment;\r",
+							"    var employmentId = null;\r",
+							"\r",
+							"    for (var j = 0; j < employmentArray.length; j++) {\r",
+							"      var employmentObject = employmentArray[j];\r",
+							"      if (employmentObject.name === \"Полная занятость\") {\r",
+							"        employmentId = employmentObject.id;\r",
+							"        break;\r",
+							"      }\r",
+							"    }\r",
+							"\r",
+							"    // Сохранение значений в переменные\r",
+							"    pm.variables.set('areaId', areaId);\r",
+							"    pm.variables.set('experienceId', experienceId);\r",
+							"    pm.variables.set('employmentId', employmentId);\r",
+							"  });\r",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"pm.test(\"Response time is less than 200ms\", function () {\r",
+							"    pm.expect(pm.response.responseTime).to.be.below(1000);\r",
+							"});\r",
+							"pm.test(\"Body matches string\", function () {\r",
+							"    pm.expect(pm.response.text()).to.include(\"items\", \"found\", \"pages\", \"per_page\", \"page\", \"clusters\", \"arguments\", \"alternate_url\");\r",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://api.hh.ru/vacancies?page=1&per_page=20&text={{vacancy}}&experience={{experienceId}}&area={{areaId}}&salary=180000&only_with_salary=true&employment={{employmentId}}",
+					"protocol": "https",
+					"host": [
+						"api",
+						"hh",
+						"ru"
+					],
+					"path": [
+						"vacancies"
+					],
+					"query": [
+						{
+							"key": "page",
+							"value": "1"
+						},
+						{
+							"key": "per_page",
+							"value": "20"
+						},
+						{
+							"key": "text",
+							"value": "{{vacancy}}"
+						},
+						{
+							"key": "experience",
+							"value": "{{experienceId}}"
+						},
+						{
+							"key": "area",
+							"value": "{{areaId}}"
+						},
+						{
+							"key": "salary",
+							"value": "180000"
+						},
+						{
+							"key": "only_with_salary",
+							"value": "true"
+						},
+						{
+							"key": "employment",
+							"value": "{{employmentId}}"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "experienceId",
+			"value": "null"
+		},
+		{
+			"key": "employmentId",
+			"value": "null"
+		},
+		{
+			"key": "city",
+			"value": "Москва",
+			"type": "string"
+		},
+		{
+			"key": "areaId",
+			"value": "null",
+			"type": "string"
+		},
+		{
+			"key": "vacancy",
+			"value": "QA Engineer",
+			"type": "string"
+		}
+	]
+}
